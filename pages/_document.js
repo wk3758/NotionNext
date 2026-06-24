@@ -1,5 +1,6 @@
 // eslint-disable-next-line @next/next/no-document-import-in-page
 import BLOG from '@/blog.config'
+import { ZHISHENJUNEI_INTERNAL_LINKS } from '@/lib/seo/zhishenjunei'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 
 const fontAwesomeLoadScript = BLOG.FONT_AWESOME
@@ -114,6 +115,15 @@ class MyDocument extends Document {
 
         <body>
           <Main />
+          <noscript>
+            <nav aria-label='置身菊内相关文章'>
+              {ZHISHENJUNEI_INTERNAL_LINKS.map(link => (
+                <a key={link.label} href={link.href}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          </noscript>
           <NextScript />
         </body>
       </Html>
