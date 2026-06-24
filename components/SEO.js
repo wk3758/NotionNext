@@ -1,5 +1,10 @@
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
+import {
+  getZhishenjuneiFaqSchema,
+  normalizeHuaweiMemeUrl,
+  withZhishenjuneiSeoMeta
+} from '@/lib/seo/zhishenjunei'
 import { loadExternalResource } from '@/lib/utils'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -13,12 +18,14 @@ import { useEffect } from 'react'
 const SEO = props => {
   const { children, siteInfo, post, NOTION_CONFIG } = props
   const PATH = siteConfig('PATH')
-  const LINK = siteConfig('LINK')
+  const LINK = normalizeHuaweiMemeUrl(siteConfig('LINK'))
   const SUB_PATH = siteConfig('SUB_PATH', '')
   let url = PATH?.length ? `${LINK}/${SUB_PATH}` : LINK
   let image
   const router = useRouter()
-  const meta = getSEOMeta(props, router, useGlobal()?.locale)
+  const meta = withZhishenjuneiSeoMeta(
+    getSEOMeta(props, router, useGlobal()?.locale)
+  )
   const webFontUrl = siteConfig('FONT_URL')
 
   useEffect(() => {
@@ -46,9 +53,15 @@ const SEO = props => {
   if (post?.tags && post?.tags?.length > 0) {
     keywords = post?.tags?.join(',')
   }
+  if (meta?.tags && meta.tags?.length > 0) {
+    keywords = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags
+  }
+  if (meta?.keywords) {
+    keywords = meta.keywords
+  }
   if (meta) {
-    url = `${url}/${meta.slug}`
-    image = meta.image || '/bg_image.jpg'
+    url = meta.canonical || normalizeHuaweiMemeUrl(`${url}/${meta.slug}`)
+    image = normalizeSeoImage(meta.image || '/bg_image.jpg', LINK)
   }
   const TITLE = siteConfig('TITLE')
   const title = meta?.title || TITLE
@@ -134,6 +147,7 @@ const SEO = props => {
       <meta name='description' content={description} />
       <meta name='author' content={AUTHOR} />
       <meta name='generator' content='NotionNext' />
+      <link rel='canonical' href={url} />
 
       {/* 语言和地区 */}
       <meta httpEquiv='content-language' content={siteConfig('LANG')} />
@@ -212,6 +226,17 @@ const SEO = props => {
   )
 }
 
+const normalizeSeoImage = (image, link) => {
+  if (!image || typeof image !== 'string') {
+    return image
+  }
+  if (/^https?:\/\//i.test(image)) {
+    return normalizeHuaweiMemeUrl(image)
+  }
+  const path = image.startsWith('/') ? image : `/${image}`
+  return `${link}${path}`
+}
+
 /**
  * 生成结构化数据
  * @param {*} meta
@@ -227,7 +252,7 @@ const generateStructuredData = (meta, siteInfo, url, image, author) => {
     '@type': 'WebSite',
     name: siteInfo?.title,
     description: siteInfo?.description,
-    url: siteConfig('LINK'),
+    url: normalizeHuaweiMemeUrl(siteConfig('LINK')),
     author: {
       '@type': 'Person',
       name: author
@@ -244,7 +269,7 @@ const generateStructuredData = (meta, siteInfo, url, image, author) => {
 
   // 如果是文章页面，添加文章结构化数据
   if (meta?.type === 'Post') {
-    return {
+    const blogPosting = {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       headline: meta.title,
@@ -272,6 +297,15 @@ const generateStructuredData = (meta, siteInfo, url, image, author) => {
       keywords: meta.tags?.join(', '),
       articleSection: meta.category
     }
+
+    if (meta?.seoKey === 'zhishenjunei') {
+      return {
+        '@context': 'https://schema.org',
+        '@graph': [blogPosting, getZhishenjuneiFaqSchema()]
+      }
+    }
+
+    return blogPosting
   }
 
   return baseData

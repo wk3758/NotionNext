@@ -4,6 +4,7 @@ import replaceSearchResult from '@/components/Mark'
 import NotionPage from '@/components/NotionPage'
 import ShareBar from '@/components/ShareBar'
 import SmartLink from '@/components/SmartLink'
+import ZhishenjuneiInternalLinks from '@/components/ZhishenjuneiInternalLinks'
 import { siteConfig } from '@/lib/config'
 import { isBrowser } from '@/lib/utils'
 import { generateLocaleDict } from '@/lib/utils/lang'
@@ -103,6 +104,7 @@ const LayoutPostList = props => {
           </div>
         </div>
       )}
+      <ZhishenjuneiInternalLinks />
       <PostList posts={props.posts} />
       <Pagination page={props.page} postCount={props.postCount} />
     </>
@@ -130,6 +132,7 @@ const LayoutSlug = props => {
           <ArticleHeader post={post} />
           <div id='article-wrapper' className='fuwari-prose'>
             <NotionPage post={post} />
+            <ZhishenjuneiInternalLinks currentPost={post} />
             {siteConfig('FUWARI_ARTICLE_SHARE', true, CONFIG) && <ShareBar post={post} />}
           </div>
           <ArticleCopyright post={post} />

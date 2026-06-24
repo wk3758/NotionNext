@@ -15,6 +15,7 @@ import replaceSearchResult from '@/components/Mark'
 import NotionPage from '@/components/NotionPage'
 import ShareBar from '@/components/ShareBar'
 import WWAds from '@/components/WWAds'
+import ZhishenjuneiInternalLinks from '@/components/ZhishenjuneiInternalLinks'
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import { loadWowJS } from '@/lib/plugins/wow'
@@ -142,6 +143,7 @@ const LayoutIndex = props => {
     <div id='post-outer-wrapper' className='px-5 md:px-0'>
       {/* 文章分类条 */}
       <CategoryBar {...props} />
+      <ZhishenjuneiInternalLinks />
       {siteConfig('POST_LIST_STYLE') === 'page' ? (
         <BlogPostListPage {...props} />
       ) : (
@@ -161,6 +163,7 @@ const LayoutPostList = props => {
     <div id='post-outer-wrapper' className='px-5  md:px-0'>
       {/* 文章分类条 */}
       <CategoryBar {...props} />
+      <ZhishenjuneiInternalLinks />
       {siteConfig('POST_LIST_STYLE') === 'page' ? (
         <BlogPostListPage {...props} />
       ) : (
@@ -314,6 +317,7 @@ const LayoutSlug = props => {
                 <AISummary aiSummary={post.aiSummary} />
                 <WWAds orientation='horizontal' className='w-full' />
                 {post && <NotionPage post={post} />}
+                <ZhishenjuneiInternalLinks currentPost={post} />
                 <WWAds orientation='horizontal' className='w-full' />
               </section>
 

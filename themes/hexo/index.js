@@ -8,6 +8,7 @@ import { isBrowser } from '@/lib/utils'
 import { Transition } from '@headlessui/react'
 import dynamic from 'next/dynamic'
 import SmartLink from '@/components/SmartLink'
+import ZhishenjuneiInternalLinks from '@/components/ZhishenjuneiInternalLinks'
 import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import ArticleAdjacent from './components/ArticleAdjacent'
@@ -194,6 +195,7 @@ const LayoutPostList = props => {
   return (
     <div className='pt-8'>
       <SlotBar {...props} />
+      <ZhishenjuneiInternalLinks />
       {siteConfig('POST_LIST_STYLE') === 'page' ? (
         <BlogPostListPage {...props} />
       ) : (
@@ -310,6 +312,7 @@ const LayoutSlug = props => {
               {/* Notion文章主体 */}
               <section className='px-5 justify-center mx-auto max-w-2xl lg:max-w-full'>
                 {post && <NotionPage post={post} />}
+                <ZhishenjuneiInternalLinks currentPost={post} />
               </section>
 
               {/* 分享 */}
