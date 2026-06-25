@@ -45,7 +45,7 @@ const SEO = props => {
         })
       }
     })
-  }, [])
+  }, [webFontUrl])
 
   // SEO关键词
   const KEYWORDS = siteConfig('KEYWORDS')
@@ -83,6 +83,13 @@ const SEO = props => {
     null,
     NOTION_CONFIG
   )
+
+  const SEO_BYTEDANCE_SITE_VERIFICATION =
+    siteConfig(
+      'SEO_BYTEDANCE_SITE_VERIFICATION',
+      'rjsW6WJIxR0ry1Qy6yAi',
+      NOTION_CONFIG
+    ) || 'rjsW6WJIxR0ry1Qy6yAi'
 
   const BLOG_FAVICON = siteConfig('BLOG_FAVICON', null, NOTION_CONFIG)
 
@@ -143,6 +150,13 @@ const SEO = props => {
       )}
 
       {/* 基础SEO元数据 */}
+      {SEO_BYTEDANCE_SITE_VERIFICATION && (
+        <meta
+          name='bytedance-verification-code'
+          content={SEO_BYTEDANCE_SITE_VERIFICATION}
+        />
+      )}
+
       <meta name='keywords' content={keywords} />
       <meta name='description' content={description} />
       <meta name='author' content={AUTHOR} />

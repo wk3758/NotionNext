@@ -7,6 +7,7 @@ import {
 } from '@/lib/db/SiteDataApi'
 import { formatNotionBlock } from '@/lib/db/notion/getPostBlocks'
 import { generateRobotsTxt } from '@/lib/utils/robots.txt'
+import { generateLlmsTxt } from '@/lib/utils/llms.txt'
 import { generateRss, shouldGenerateRssForLocale } from '@/lib/utils/rss'
 import { generateSitemapXml } from '@/lib/utils/sitemap.xml'
 import { DynamicLayout } from '@/themes/theme'
@@ -110,6 +111,8 @@ export async function getStaticProps(req) {
     }
     // 生成
     generateSitemapXml(props)
+    // Generate an AI-search-friendly site overview.
+    generateLlmsTxt(props)
     // 检查数据是否需要从algolia删除
     await checkDataFromAlgolia(props)
     if (siteConfig('UUID_REDIRECT', false, props?.NOTION_CONFIG)) {
