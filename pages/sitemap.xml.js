@@ -8,6 +8,11 @@ import {
   normalizeSitemapLocale,
   toSitemapDateString
 } from '@/lib/sitemap-utils'
+import {
+  getHuaweiTopicPath,
+  HUAWEI_TOPIC_PAGES,
+  HUAWEI_TOPIC_UPDATED_AT
+} from '@/lib/seo/huaweiTopics'
 import { extractLangId, extractLangPrefix } from '@/lib/utils/pageId'
 import { getServerSideSitemap } from 'next-sitemap'
 
@@ -79,26 +84,6 @@ function generateLocalesSitemap(link, allPages, locale) {
       loc: buildSitemapLoc({
         baseUrl: normalizedLink,
         locale: normalizedLocale,
-        slug: 'rss/feed.xml'
-      }),
-      lastmod: dateNow,
-      changefreq: 'daily',
-      priority: '0.7'
-    },
-    {
-      loc: buildSitemapLoc({
-        baseUrl: normalizedLink,
-        locale: normalizedLocale,
-        slug: 'search'
-      }),
-      lastmod: dateNow,
-      changefreq: 'daily',
-      priority: '0.7'
-    },
-    {
-      loc: buildSitemapLoc({
-        baseUrl: normalizedLink,
-        locale: normalizedLocale,
         slug: 'tag'
       }),
       lastmod: dateNow,
@@ -107,9 +92,21 @@ function generateLocalesSitemap(link, allPages, locale) {
     }
   ].filter(field => Boolean(field?.loc))
 
+  const topicFields = HUAWEI_TOPIC_PAGES.map(topic => ({
+    loc: buildSitemapLoc({
+      baseUrl: normalizedLink,
+      locale: normalizedLocale,
+      slug: getHuaweiTopicPath(topic).replace(/^\/+/, '')
+    }),
+    lastmod: HUAWEI_TOPIC_UPDATED_AT,
+    changefreq: 'weekly',
+    priority: '0.8'
+  })).filter(field => Boolean(field?.loc))
+
   const postFields =
     allPages
       ?.filter(p => p.status === BLOG.NOTION_PROPERTY_NAME.status_publish)
+      ?.filter(p => p.type === 'Post' || p.type === 'Page')
       // 过滤掉外部链接(http开头)和锚点链接(#开头)
       ?.filter(p => p.slug && !p.slug.startsWith('http') && !p.slug.startsWith('#'))
       ?.map(post => {
@@ -122,14 +119,17 @@ function generateLocalesSitemap(link, allPages, locale) {
 
         return {
           loc,
-          lastmod: toSitemapDateString(post?.publishDay, dateNow),
+          lastmod: toSitemapDateString(
+            post?.lastEditedDate || post?.lastEditedDay || post?.publishDate || post?.publishDay,
+            dateNow
+          ),
           changefreq: 'daily',
           priority: '0.7'
         }
       })
       ?.filter(Boolean) ?? []
 
-  return defaultFields.concat(postFields)
+  return defaultFields.concat(topicFields, postFields)
 }
 
 function getUniqueFields(fields) {

@@ -26,15 +26,27 @@ describe('generateSitemapXml', () => {
       allPages: [
         {
           slug: '/hello-world',
+          status: 'Published',
+          type: 'Post',
           publishDay: '2026-02-20'
         },
         {
           slug: 'https://external.com/landing',
+          status: 'Published',
+          type: 'Post',
           publishDay: '2026-02-20'
         },
         {
           slug: 'https://example.com/internal/page',
+          status: 'Published',
+          type: 'Page',
           publishDay: 'invalid-date'
+        },
+        {
+          slug: '/search-only',
+          status: 'Published',
+          type: 'Menu',
+          publishDay: '2026-02-20'
         }
       ]
     })
@@ -42,11 +54,40 @@ describe('generateSitemapXml', () => {
     expect(writeSpy).toHaveBeenCalledTimes(2)
 
     const xml = writeSpy.mock.calls[0][1]
+    expect(xml).toContain('<loc>https://example.com/topic/huawei-negative-keywords</loc>')
+    expect(xml).toContain('<loc>https://example.com/topic/huawei-layoffs</loc>')
+    expect(xml).toContain('<lastmod>2026-06-28</lastmod>')
     expect(xml).toContain('<loc>https://example.com/hello-world</loc>')
     expect(xml).toContain('<loc>https://example.com/internal/page</loc>')
     expect(xml).not.toContain('<loc>https://external.com/landing</loc>')
+    expect(xml).not.toContain('<loc>https://example.com/search-only</loc>')
     expect(xml).not.toContain('https://example.com/https://external.com/landing')
     expect(xml).not.toContain('Invalid Date')
+
+    writeSpy.mockRestore()
+  })
+
+  it('uses last edited date before publish date for content lastmod', () => {
+    const writeSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {})
+
+    generateSitemapXml({
+      NOTION_CONFIG: {
+        LINK: 'https://example.com/'
+      },
+      allPages: [
+        {
+          slug: '/updated-post',
+          status: 'Published',
+          type: 'Post',
+          publishDay: '2026-01-01',
+          lastEditedDate: '2026-02-03T10:00:00.000Z'
+        }
+      ]
+    })
+
+    const xml = writeSpy.mock.calls[0][1]
+    expect(xml).toContain('<loc>https://example.com/updated-post</loc>')
+    expect(xml).toContain('<lastmod>2026-02-03</lastmod>')
 
     writeSpy.mockRestore()
   })

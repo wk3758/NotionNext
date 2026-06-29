@@ -5,6 +5,11 @@ import {
   normalizeHuaweiMemeUrl,
   withZhishenjuneiSeoMeta
 } from '@/lib/seo/zhishenjunei'
+import {
+  getHuaweiTopicKeywords,
+  getHuaweiTopicUrl,
+  getHuaweiTopicWordCount
+} from '@/lib/seo/huaweiTopics'
 import { loadExternalResource } from '@/lib/utils'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -67,6 +72,9 @@ const SEO = props => {
   const title = meta?.title || TITLE
   const description = meta?.description || `${siteInfo?.description}`
   const type = meta?.type || 'website'
+  const isArticle = meta?.type === 'Post' || meta?.type === 'Article'
+  const ogType = isArticle ? 'article' : type
+  const robots = meta?.robots || 'follow, index, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
   const lang = siteConfig('LANG').replace('-', '_') // Facebook OpenGraph 要 zh_CN 這樣的格式才抓得到語言
   const category = meta?.category || KEYWORDS // section 主要是像是 category 這樣的分類，Facebook 用這個來抓連結的分類
   const favicon = siteConfig('BLOG_FAVICON')
@@ -83,13 +91,6 @@ const SEO = props => {
     null,
     NOTION_CONFIG
   )
-
-  const SEO_BYTEDANCE_SITE_VERIFICATION =
-    siteConfig(
-      'SEO_BYTEDANCE_SITE_VERIFICATION',
-      'rjsW6WJIxR0ry1Qy6yAi',
-      NOTION_CONFIG
-    ) || 'rjsW6WJIxR0ry1Qy6yAi'
 
   const BLOG_FAVICON = siteConfig('BLOG_FAVICON', null, NOTION_CONFIG)
 
@@ -118,6 +119,12 @@ const SEO = props => {
   const FACEBOOK_PAGE = siteConfig('FACEBOOK_PAGE', null, NOTION_CONFIG)
 
   const AUTHOR = siteConfig('AUTHOR')
+  const logo = normalizeSeoLogo(siteInfo, LINK, BLOG_FAVICON || favicon)
+  const publishedTime = normalizeSeoDate(meta?.publishDate || meta?.publishDay)
+  const modifiedTime = normalizeSeoDate(
+    meta?.lastEditedDate || meta?.lastEditedDay || meta?.publishDate || meta?.publishDay
+  )
+  const keywordList = normalizeKeywordList(meta?.tags || keywords)
   return (
     <Head>
       <link rel='icon' href={favicon} />
@@ -127,7 +134,7 @@ const SEO = props => {
         name='viewport'
         content='width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0'
       />
-      <meta name='robots' content='follow, index, max-snippet:-1, max-image-preview:large, max-video-preview:-1' />
+      <meta name='robots' content={robots} />
       <meta charSet='UTF-8' />
       <meta name='format-detection' content='telephone=no' />
       <meta name='mobile-web-app-capable' content='yes' />
@@ -150,13 +157,6 @@ const SEO = props => {
       )}
 
       {/* 基础SEO元数据 */}
-      {SEO_BYTEDANCE_SITE_VERIFICATION && (
-        <meta
-          name='bytedance-verification-code'
-          content={SEO_BYTEDANCE_SITE_VERIFICATION}
-        />
-      )}
-
       <meta name='keywords' content={keywords} />
       <meta name='description' content={description} />
       <meta name='author' content={AUTHOR} />
@@ -177,7 +177,7 @@ const SEO = props => {
       <meta property='og:image:height' content='630' />
       <meta property='og:image:alt' content={title} />
       <meta property='og:site_name' content={siteConfig('TITLE')} />
-      <meta property='og:type' content={type} />
+      <meta property='og:type' content={ogType} />
 
       {/* Twitter Card 元数据 */}
       <meta name='twitter:card' content='summary_large_image' />
@@ -189,6 +189,12 @@ const SEO = props => {
       <meta name='twitter:image:alt' content={title} />
 
       <link rel='icon' href={BLOG_FAVICON} />
+      <link
+        rel='alternate'
+        type='application/rss+xml'
+        title={`${siteConfig('TITLE')} RSS`}
+        href={`${LINK}/rss/feed.xml`}
+      />
 
       {COMMENT_WEBMENTION_ENABLE && (
         <>
@@ -210,14 +216,22 @@ const SEO = props => {
         <meta name='referrer' content='no-referrer-when-downgrade' />
       )}
       {/* 文章特定元数据 */}
-      {meta?.type === 'Post' && (
+      {isArticle && (
         <>
-          <meta property='article:published_time' content={meta.publishDay} />
-          <meta property='article:modified_time' content={meta.lastEditedDay} />
+          {publishedTime && (
+            <meta property='article:published_time' content={publishedTime} />
+          )}
+          {modifiedTime && (
+            <meta property='article:modified_time' content={modifiedTime} />
+          )}
           <meta property='article:author' content={AUTHOR} />
           <meta property='article:section' content={category} />
-          <meta property='article:tag' content={keywords} />
-          <meta property='article:publisher' content={FACEBOOK_PAGE} />
+          {keywordList.map(keyword => (
+            <meta key={keyword} property='article:tag' content={keyword} />
+          ))}
+          {FACEBOOK_PAGE && (
+            <meta property='article:publisher' content={FACEBOOK_PAGE} />
+          )}
         </>
       )}
 
@@ -225,7 +239,9 @@ const SEO = props => {
       <script
         type='application/ld+json'
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(generateStructuredData(meta, siteInfo, url, image, AUTHOR))
+          __html: JSON.stringify(
+            generateStructuredData(meta, siteInfo, url, image, AUTHOR, logo)
+          )
         }}
       />
 
@@ -251,6 +267,35 @@ const normalizeSeoImage = (image, link) => {
   return `${link}${path}`
 }
 
+const isSeoImageCandidate = image => {
+  if (!image || typeof image !== 'string') return false
+  const value = image.trim()
+  return /^https?:\/\//i.test(value) || value.startsWith('/')
+}
+
+const normalizeSeoLogo = (siteInfo, link, favicon) => {
+  const candidates = [siteInfo?.icon, favicon, '/favicon.ico']
+  const logo = candidates.find(isSeoImageCandidate)
+  return normalizeSeoImage(logo || '/favicon.ico', link)
+}
+
+const normalizeSeoDate = dateInput => {
+  if (!dateInput) return undefined
+  const date = new Date(dateInput)
+  if (Number.isNaN(date.getTime())) return undefined
+  return date.toISOString()
+}
+
+const normalizeKeywordList = keywords => {
+  if (Array.isArray(keywords)) {
+    return keywords.map(keyword => `${keyword}`.trim()).filter(Boolean)
+  }
+  if (typeof keywords === 'string') {
+    return keywords.split(',').map(keyword => keyword.trim()).filter(Boolean)
+  }
+  return []
+}
+
 /**
  * 生成结构化数据
  * @param {*} meta
@@ -260,66 +305,95 @@ const normalizeSeoImage = (image, link) => {
  * @param {*} author
  * @returns
  */
-const generateStructuredData = (meta, siteInfo, url, image, author) => {
+const generateStructuredData = (meta, siteInfo, url, image, author, logo) => {
+  const siteUrl = normalizeHuaweiMemeUrl(siteConfig('LINK'))
+  const lang = siteConfig('LANG')
+  const organization = {
+    '@type': 'Organization',
+    name: siteInfo?.title,
+    logo: {
+      '@type': 'ImageObject',
+      url: logo
+    }
+  }
+
   const baseData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: siteInfo?.title,
     description: siteInfo?.description,
-    url: normalizeHuaweiMemeUrl(siteConfig('LINK')),
+    url: siteUrl,
+    inLanguage: lang,
     author: {
       '@type': 'Person',
       name: author
     },
-    publisher: {
-      '@type': 'Organization',
-      name: siteInfo?.title,
-      logo: {
-        '@type': 'ImageObject',
-        url: siteInfo?.icon
-      }
+    publisher: organization,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${siteUrl}/search?s={search_term_string}`,
+      'query-input': 'required name=search_term_string'
     }
   }
 
-  // 如果是文章页面，添加文章结构化数据
-  if (meta?.type === 'Post') {
-    const blogPosting = {
+  const isArticle = meta?.type === 'Post' || meta?.type === 'Article'
+  if (isArticle) {
+    const article = {
       '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
+      '@type': meta?.schemaType || (meta?.type === 'Post' ? 'BlogPosting' : 'Article'),
       headline: meta.title,
       description: meta.description,
       image: image,
       url: url,
-      datePublished: meta.publishDay,
-      dateModified: meta.lastEditedDay || meta.publishDay,
+      inLanguage: lang,
+      datePublished: normalizeSeoDate(meta.publishDate || meta.publishDay),
+      dateModified: normalizeSeoDate(
+        meta.lastEditedDate || meta.lastEditedDay || meta.publishDate || meta.publishDay
+      ),
       author: {
         '@type': 'Person',
         name: author
       },
-      publisher: {
-        '@type': 'Organization',
-        name: siteInfo?.title,
-        logo: {
-          '@type': 'ImageObject',
-          url: siteInfo?.icon
-        }
-      },
+      publisher: organization,
       mainEntityOfPage: {
         '@type': 'WebPage',
         '@id': url
       },
-      keywords: meta.tags?.join(', '),
-      articleSection: meta.category
+      keywords: normalizeKeywordList(meta.tags || meta.keywords).join(', '),
+      articleSection: meta.category,
+      wordCount: meta.wordCount,
+      isAccessibleForFree: true
     }
 
+    const graph = [article]
+
     if (meta?.seoKey === 'zhishenjunei') {
+      graph.push(getZhishenjuneiFaqSchema())
+    }
+
+    if (Array.isArray(meta?.faqs) && meta.faqs.length > 0) {
+      graph.push({
+        '@type': 'FAQPage',
+        '@id': `${url}#faq`,
+        mainEntity: meta.faqs.map(faq => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer
+          }
+        }))
+      })
+    }
+
+    if (graph.length > 1) {
       return {
         '@context': 'https://schema.org',
-        '@graph': [blogPosting, getZhishenjuneiFaqSchema()]
+        '@graph': graph
       }
     }
 
-    return blogPosting
+    return article
   }
 
   return baseData
@@ -331,7 +405,7 @@ const generateStructuredData = (meta, siteInfo, url, image, author) => {
  * @param {*} router
  */
 const getSEOMeta = (props, router, locale) => {
-  const { post, siteInfo, tag, category, page } = props
+  const { post, siteInfo, tag, category, page, topic, NOTION_CONFIG } = props
   const keyword = router?.query?.s
 
   const TITLE = siteConfig('TITLE')
@@ -391,7 +465,8 @@ const getSEOMeta = (props, router, locale) => {
         description: `${siteInfo?.description}`,
         image: `${siteInfo?.pageCover}`,
         slug: 'search',
-        type: 'website'
+        type: 'website',
+        robots: 'noindex, follow'
       }
     case '/search/[keyword]':
     case '/search/[keyword]/page/[page]':
@@ -400,12 +475,43 @@ const getSEOMeta = (props, router, locale) => {
         description: TITLE,
         image: `${siteInfo?.pageCover}`,
         slug: 'search/' + (keyword || ''),
-        type: 'website'
+        type: 'website',
+        robots: 'noindex, follow'
+      }
+    case '/topic/[slug]':
+      if (!topic) {
+        return {
+          title: `${siteInfo?.title} | Topic`,
+          description: `${siteInfo?.description}`,
+          image: `${siteInfo?.pageCover}`,
+          slug: `topic/${router?.query?.slug || ''}`,
+          type: 'website',
+          robots: 'noindex, follow'
+        }
+      }
+      return {
+        title: topic.metaTitle || `${topic.title} | ${siteInfo?.title}`,
+        description: topic.description,
+        canonical: getHuaweiTopicUrl(
+          normalizeHuaweiMemeUrl(siteConfig('LINK', siteInfo?.link, NOTION_CONFIG)),
+          topic
+        ),
+        image: topic.image || `${siteInfo?.pageCover}`,
+        slug: `topic/${topic.slug}`,
+        type: 'Article',
+        schemaType: 'Article',
+        category: topic.category || '华为争议事实核查',
+        tags: getHuaweiTopicKeywords(topic),
+        keywords: getHuaweiTopicKeywords(topic).join(','),
+        publishDate: topic.publishedAt || '2026-06-28',
+        lastEditedDate: topic.updatedAt || '2026-06-28',
+        wordCount: getHuaweiTopicWordCount(topic)
       }
     case '/404':
       return {
         title: `${siteInfo?.title} | ${locale.NAV.PAGE_NOT_FOUND}`,
-        image: `${siteInfo?.pageCover}`
+        image: `${siteInfo?.pageCover}`,
+        robots: 'noindex, follow'
       }
     case '/tag':
       return {
@@ -432,8 +538,14 @@ const getSEOMeta = (props, router, locale) => {
         type: post?.type,
         slug: post?.slug,
         image: post?.pageCoverThumbnail || `${siteInfo?.pageCover}`,
-        category: post?.category?.[0],
-        tags: post?.tags
+        category: Array.isArray(post?.category) ? post.category[0] : post?.category,
+        tags: post?.tags,
+        keywords: post?.tags?.join(','),
+        publishDate: post?.publishDate,
+        publishDay: post?.publishDay,
+        lastEditedDate: post?.lastEditedDate,
+        lastEditedDay: post?.lastEditedDay,
+        wordCount: post?.wordCount
       }
   }
 }

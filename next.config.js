@@ -340,15 +340,6 @@ const nextConfig = {
               key: 'Access-Control-Allow-Headers',
               value:
                 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-            },
-            {
-              key: 'Link',
-              value:
-                '</llms.txt>; rel="alternate"; type="text/plain"; title="llms.txt", </sitemap.xml>; rel="sitemap"; type="application/xml", </rss/feed.xml>; rel="alternate"; type="application/rss+xml"; title="RSS"'
-            },
-            {
-              key: 'Content-Signal',
-              value: 'search=yes, ai-input=yes'
             }
             // 安全头部 相关配置，谨慎开启
             //   { key: 'X-Frame-Options', value: 'DENY' },
