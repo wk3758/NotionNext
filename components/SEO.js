@@ -507,6 +507,17 @@ const getSEOMeta = (props, router, locale) => {
         lastEditedDate: topic.updatedAt || '2026-06-28',
         wordCount: getHuaweiTopicWordCount(topic)
       }
+    case '/disclaimer':
+      return {
+        title: `免责声明 | ${siteInfo?.title}`,
+        description:
+          'HUAWEI.MEME 关于公开资料转载、引用、知识产权、商标、事实核验、第三方链接、权利人通知与删除机制的免责声明。',
+        image: `${siteInfo?.pageCover}`,
+        slug: 'disclaimer',
+        type: 'website',
+        keywords:
+          'HUAWEI.MEME,免责声明,版权声明,商标声明,知识产权,权利人通知,侵权删除,公开资料引用'
+      }
     case '/404':
       return {
         title: `${siteInfo?.title} | ${locale.NAV.PAGE_NOT_FOUND}`,

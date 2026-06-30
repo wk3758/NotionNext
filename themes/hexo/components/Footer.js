@@ -2,6 +2,7 @@ import { BeiAnGongAn } from '@/components/BeiAnGongAn'
 import BeiAnSite from '@/components/BeiAnSite'
 import PoweredBy from '@/components/PoweredBy'
 import { siteConfig } from '@/lib/config'
+import Link from 'next/link'
 
 const Footer = ({ title }) => {
   const d = new Date()
@@ -35,6 +36,13 @@ const Footer = ({ title }) => {
         <h1 className='text-xs pt-4 text-light-400 dark:text-gray-400'>
           {title} {siteConfig('BIO') && <>|</>} {siteConfig('BIO')}
         </h1>
+        <div className='pt-2 text-xs'>
+          <Link
+            href='/disclaimer'
+            className='underline transition hover:text-gray-900 dark:hover:text-white'>
+            免责声明
+          </Link>
+        </div>
         <PoweredBy className='justify-center' />
       </span>
       <br />

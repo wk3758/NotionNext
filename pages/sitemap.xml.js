@@ -89,6 +89,16 @@ function generateLocalesSitemap(link, allPages, locale) {
       lastmod: dateNow,
       changefreq: 'daily',
       priority: '0.7'
+    },
+    {
+      loc: buildSitemapLoc({
+        baseUrl: normalizedLink,
+        locale: normalizedLocale,
+        slug: 'disclaimer'
+      }),
+      lastmod: dateNow,
+      changefreq: 'monthly',
+      priority: '0.6'
     }
   ].filter(field => Boolean(field?.loc))
 
@@ -146,4 +156,6 @@ function getUniqueFields(fields) {
   return Array.from(uniqueFieldsMap.values())
 }
 
-export default () => { }
+const SitemapXmlPage = () => { }
+
+export default SitemapXmlPage

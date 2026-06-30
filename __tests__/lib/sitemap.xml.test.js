@@ -56,6 +56,7 @@ describe('generateSitemapXml', () => {
     const xml = writeSpy.mock.calls[0][1]
     expect(xml).toContain('<loc>https://example.com/topic/huawei-negative-keywords</loc>')
     expect(xml).toContain('<loc>https://example.com/topic/huawei-layoffs</loc>')
+    expect(xml).toContain('<loc>https://example.com/disclaimer</loc>')
     expect(xml).toContain('<lastmod>2026-06-28</lastmod>')
     expect(xml).toContain('<loc>https://example.com/hello-world</loc>')
     expect(xml).toContain('<loc>https://example.com/internal/page</loc>')
